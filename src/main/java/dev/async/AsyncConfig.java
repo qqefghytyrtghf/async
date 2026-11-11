@@ -30,6 +30,7 @@ public final class AsyncConfig {
     private double attackDistance = 3.0;
     private boolean showStatus = true;
     private int guiColor = AsyncTheme.getDefaultAccent();
+    private int guiSize = 100;
 
     private int hudX = -1;
     private int hudY = -1;
@@ -78,6 +79,10 @@ public final class AsyncConfig {
         return guiColor;
     }
 
+    public int getGuiSize() {
+        return guiSize;
+    }
+
     public int getHudX() {
         return hudX;
     }
@@ -95,6 +100,25 @@ public final class AsyncConfig {
     public void setGuiColor(int value) {
         guiColor = AsyncTheme.normalizeColor(value);
         save();
+    }
+
+    public void setGuiSize(int value) {
+        guiSize = normalizeGuiSize(value);
+        save();
+    }
+
+    private static int normalizeGuiSize(int value) {
+        int[] sizes = {75, 85, 100, 110, 120};
+        int nearest = sizes[0];
+        int distance = Math.abs(value - nearest);
+        for (int size : sizes) {
+            int candidateDistance = Math.abs(value - size);
+            if (candidateDistance < distance) {
+                nearest = size;
+                distance = candidateDistance;
+            }
+        }
+        return nearest;
     }
 
     public void setEnabled(boolean value) {
@@ -211,6 +235,10 @@ public final class AsyncConfig {
                 guiColor = AsyncTheme.normalizeColor(o.get("guiColor").getAsInt());
             }
 
+            if (o.has("guiSize")) {
+                guiSize = normalizeGuiSize(o.get("guiSize").getAsInt());
+            }
+
             if (o.has("hudX")) {
                 hudX = Math.max(0, o.get("hudX").getAsInt());
             }
@@ -237,6 +265,7 @@ public final class AsyncConfig {
             attackDistance = 3.0;
             showStatus = true;
             guiColor = AsyncTheme.getDefaultAccent();
+            guiSize = 100;
             hudX = -1;
             hudY = -1;
         }
@@ -269,6 +298,7 @@ public final class AsyncConfig {
         o.addProperty("attackDistance", attackDistance);
         o.addProperty("showStatus", showStatus);
         o.addProperty("guiColor", guiColor);
+        o.addProperty("guiSize", guiSize);
         o.addProperty("hudX", hudX);
         o.addProperty("hudY", hudY);
 
