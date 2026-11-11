@@ -1,4 +1,3 @@
-
 package dev.async;
 
 import com.google.gson.Gson;
@@ -30,6 +29,7 @@ public final class AsyncConfig {
     private int menuKey = GLFW.GLFW_KEY_L;
     private double attackDistance = 3.0;
     private boolean showStatus = true;
+    private int guiColor = AsyncTheme.getDefaultAccent();
 
     private int hudX = -1;
     private int hudY = -1;
@@ -74,6 +74,10 @@ public final class AsyncConfig {
         return showStatus;
     }
 
+    public int getGuiColor() {
+        return guiColor;
+    }
+
     public int getHudX() {
         return hudX;
     }
@@ -85,6 +89,11 @@ public final class AsyncConfig {
     public void setHudPosition(int x, int y) {
         hudX = Math.max(0, x);
         hudY = Math.max(0, y);
+        save();
+    }
+
+    public void setGuiColor(int value) {
+        guiColor = AsyncTheme.normalizeColor(value);
         save();
     }
 
@@ -198,6 +207,10 @@ public final class AsyncConfig {
                 showStatus = o.get("showStatus").getAsBoolean();
             }
 
+            if (o.has("guiColor")) {
+                guiColor = AsyncTheme.normalizeColor(o.get("guiColor").getAsInt());
+            }
+
             if (o.has("hudX")) {
                 hudX = Math.max(0, o.get("hudX").getAsInt());
             }
@@ -223,6 +236,7 @@ public final class AsyncConfig {
             menuKey = GLFW.GLFW_KEY_L;
             attackDistance = 3.0;
             showStatus = true;
+            guiColor = AsyncTheme.getDefaultAccent();
             hudX = -1;
             hudY = -1;
         }
@@ -254,6 +268,7 @@ public final class AsyncConfig {
         o.addProperty("menuKey", menuKey);
         o.addProperty("attackDistance", attackDistance);
         o.addProperty("showStatus", showStatus);
+        o.addProperty("guiColor", guiColor);
         o.addProperty("hudX", hudX);
         o.addProperty("hudY", hudY);
 
