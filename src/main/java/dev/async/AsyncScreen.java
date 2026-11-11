@@ -48,8 +48,11 @@ public final class AsyncScreen extends Screen {
         distanceField = null;
         AsyncTheme.setAccent(config.getGuiColor());
 
-        panelWidth = Math.min(940, Math.max(300, width - 28));
-        panelHeight = Math.min(640, Math.max(340, height - 20));
+        double guiScale = config.getGuiSize() / 100.0;
+        int desiredWidth = (int) Math.round(940 * guiScale);
+        int desiredHeight = (int) Math.round(640 * guiScale);
+        panelWidth = Math.min(desiredWidth, Math.max(300, width - 28));
+        panelHeight = Math.min(desiredHeight, Math.max(340, height - 20));
         panelX = (width - panelWidth) / 2;
         panelY = (height - panelHeight) / 2;
 
@@ -198,11 +201,16 @@ public final class AsyncScreen extends Screen {
             b.setMessage(Text.literal("PRESS A KEY..."));
         });
 
-        addButton(guiColorText(), contentX + 10, y3, contentWidth - 20, h, b -> {
+        addButton(guiColorText(), contentX + 10, y3, cardWidth - 20, h, b -> {
             int nextColor = AsyncTheme.nextAccent(config.getGuiColor());
             config.setGuiColor(nextColor);
             AsyncTheme.setAccent(nextColor);
             b.setMessage(guiColorText());
+        });
+
+        addButton(guiSizeText(), rightX + 10, y3, cardWidth - 20, h, b -> {
+            config.setGuiSize(nextGuiSize(config.getGuiSize()));
+            init();
         });
     }
 
@@ -458,9 +466,14 @@ public final class AsyncScreen extends Screen {
                         "Native Minecraft drawing", "FABRIC GUI",
                         AsyncTheme.PURPLE, false);
 
-                drawCard(context, contentX, c, contentWidth, cardHeight, "GUI COLOR",
-                        "One accent color for the entire interface",
+                drawCard(context, contentX, c, cardWidth, cardHeight, "GUI COLOR",
+                        "Accent color for the interface",
                         AsyncTheme.getAccentName(config.getGuiColor()),
+                        AsyncTheme.PURPLE, true);
+
+                drawCard(context, rightX, c, cardWidth, cardHeight, "GUI SIZE",
+                        "Change the interface scale",
+                        config.getGuiSize() + "%",
                         AsyncTheme.PURPLE, true);
             }
         }
@@ -603,6 +616,20 @@ public final class AsyncScreen extends Screen {
     private Text guiColorText() {
         return Text.literal("GUI COLOR: "
                 + AsyncTheme.getAccentName(config.getGuiColor()) + "  •  CHANGE");
+    }
+
+    private Text guiSizeText() {
+        return Text.literal("GUI SIZE: " + config.getGuiSize() + "%  •  CHANGE");
+    }
+
+    private int nextGuiSize(int current) {
+        return switch (current) {
+            case 75 -> 85;
+            case 85 -> 100;
+            case 100 -> 110;
+            case 110 -> 120;
+            default -> 75;
+        };
     }
 
     private String keyName(int key) {
