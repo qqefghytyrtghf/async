@@ -1,4 +1,3 @@
-
 package dev.async;
 
 import net.fabricmc.api.ClientModInitializer;
@@ -20,6 +19,7 @@ public final class AsyncClient implements ClientModInitializer {
 
         config = new AsyncConfig(configPath);
         config.load();
+        AsyncTheme.setAccent(config.getGuiColor());
 
         tickRate = new TickRate(config);
 
