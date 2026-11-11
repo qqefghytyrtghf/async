@@ -34,7 +34,7 @@ public final class AsyncKeyHandler {
 
         if (openMenu && client.currentScreen == null) {
             tickRate.suppressNextAttack();
-            client.setScreen(new AsyncScreen(tickRate, config));
+            client.setScreen(new AsyncAppearanceScreen(config));
         }
 
         int key = config.getToggleKey();
