@@ -37,7 +37,7 @@ public final class AsyncAppearanceScreen extends Screen {
 
         float scale = appearance.getScale();
         panelWidth = Math.round(430 * scale);
-        panelHeight = Math.round(260 * scale);
+        panelHeight = Math.round(290 * scale);
         panelX = (width - panelWidth) / 2;
         panelY = (height - panelHeight) / 2;
 
