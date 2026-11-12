@@ -14,7 +14,7 @@ public final class AsyncAppearanceConfig {
             .getConfigDir()
             .resolve("async-appearance.properties");
 
-    private int accentColor = 0xFFB45CFF;
+    private int accentColor = 0xFF8E6BB8;
     private float scale = 1.0F;
 
     public AsyncAppearanceConfig() {
@@ -31,11 +31,11 @@ public final class AsyncAppearanceConfig {
 
     public void nextAccentColor() {
         int[] colors = {
-                0xFFB45CFF,
-                0xFF55DDF5,
-                0xFFFF5CAB,
-                0xFF55F5B0,
-                0xFFFFC857
+                0xFF8E6BB8,
+                0xFF7957A6,
+                0xFFA18AC5,
+                0xFF6D5A91,
+                0xFF9B78B5
         };
 
         int current = 0;
@@ -79,15 +79,14 @@ public final class AsyncAppearanceConfig {
                 }
             }
         } catch (Exception ignored) {
-            accentColor = 0xFFB45CFF;
+            accentColor = 0xFF8E6BB8;
             scale = 1.0F;
         }
     }
 
     private void save() {
         Properties properties = new Properties();
-        properties.setProperty("accentColor",
-                Integer.toHexString(accentColor));
+        properties.setProperty("accentColor", Integer.toHexString(accentColor));
         properties.setProperty("scale", Float.toString(scale));
 
         try {

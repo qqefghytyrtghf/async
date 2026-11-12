@@ -1,6 +1,8 @@
-
 package dev.async;
 
+import net.minecraft.client.input.MouseInput;
+import net.minecraft.client.input.MouseInput;
+import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
@@ -8,16 +10,16 @@ import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.input.KeyInput;
 import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
+import net.minecraft.client.input.MouseInput;
 
 import java.util.Locale;
 
 public final class AsyncScreen extends Screen {
 
-    private static final int ACCENT = 0xFFB45CFF;
-    private static final int ACCENT_LIGHT = 0xFFE8C9FF;
-    private static final int ACCENT_DARK = 0xFF7136A8;
+    private int ACCENT;
+    private int ACCENT_LIGHT;
+    private int ACCENT_DARK;
 
-    private static final int BACKGROUND = 0xF0080611;
     private static final int PANEL = 0xFF100C19;
     private static final int HEADER = 0xFF171020;
     private static final int CARD = 0xFF171220;
@@ -27,9 +29,9 @@ public final class AsyncScreen extends Screen {
 
     private static final int WHITE = 0xFFF8F0FF;
     private static final int MUTED = 0xFFA69AB5;
-    private static final int GREEN = 0xFF55F5B0;
-    private static final int RED = 0xFFFF638B;
-    private static final int BORDER = 0xFF49305D;
+    private static final int GREEN = 0xFFBCA9D8;
+    private static final int RED = 0xFF8F7BAA;
+    private static final int BORDER = 0xFF493D58;
 
     private enum Page {
         HOME, COMBAT, HUD, SETTINGS
@@ -37,6 +39,7 @@ public final class AsyncScreen extends Screen {
 
     private final TickRate tickRate;
     private final AsyncConfig config;
+    private final AsyncAppearanceConfig appearance;
 
     private Page page = Page.HOME;
 
@@ -65,12 +68,26 @@ public final class AsyncScreen extends Screen {
 
     private TextFieldWidget distanceField;
 
-    private long openedAt;
-
     public AsyncScreen(TickRate tickRate, AsyncConfig config) {
         super(Text.literal("Async"));
         this.tickRate = tickRate;
         this.config = config;
+        this.appearance = new AsyncAppearanceConfig();
+        updatePalette();
+    }
+
+    private void updatePalette() {
+        ACCENT = appearance.getAccentColor();
+        ACCENT_LIGHT = blend(ACCENT, 0xFFFFFFFF, 0.48F);
+        ACCENT_DARK = blend(ACCENT, 0xFF090610, 0.58F);
+    }
+
+    private int blend(int first, int second, float amount) {
+        int a = (int) (((first >>> 24) & 255) * (1.0F - amount) + ((second >>> 24) & 255) * amount);
+        int r = (int) (((first >>> 16) & 255) * (1.0F - amount) + ((second >>> 16) & 255) * amount);
+        int g = (int) (((first >>> 8) & 255) * (1.0F - amount) + ((second >>> 8) & 255) * amount);
+        int b = (int) ((first & 255) * (1.0F - amount) + (second & 255) * amount);
+        return (a << 24) | (r << 16) | (g << 8) | b;
     }
 
     @Override
@@ -116,10 +133,6 @@ public final class AsyncScreen extends Screen {
             case COMBAT -> buildCombat();
             case HUD -> buildHud();
             case SETTINGS -> buildSettings();
-        }
-
-        if (openedAt == 0L) {
-            openedAt = System.currentTimeMillis();
         }
     }
 
@@ -253,24 +266,30 @@ public final class AsyncScreen extends Screen {
     }
 
     private void buildSettings() {
-        addButton(
-                Text.literal("TRIGGERBOT: "
-                        + (tickRate.isEnabled() ? "ON" : "OFF")),
-                contentX + 9, controlY(firstCardY),
-                cardWidth - 18, 23,
+        String color = String.format(Locale.ROOT, "#%06X",
+                appearance.getAccentColor() & 0xFFFFFF);
+
+        addButton(Text.literal("CLICKGUI COLOR: " + color),
+                contentX + 9, controlY(firstCardY), contentWidth - 18, 23,
                 button -> {
-                    tickRate.toggleEnabled();
-                    button.setMessage(Text.literal(
-                            "TRIGGERBOT: "
-                                    + (tickRate.isEnabled() ? "ON" : "OFF")));
+                    appearance.nextAccentColor();
+                    updatePalette();
+                    button.setMessage(Text.literal("CLICKGUI COLOR: "
+                            + String.format(Locale.ROOT, "#%06X",
+                            appearance.getAccentColor() & 0xFFFFFF)));
                 });
 
-        addButton(keyToggleText(), rightCardX + 9,
-                controlY(firstCardY), cardWidth - 18, 23,
-                button -> {
-                    tickRate.toggleKeyToggleEnabled();
-                    button.setMessage(keyToggleText());
-                });
+        int sizeY = controlY(secondCardY);
+        int smallWidth = Math.min(70, Math.max(48, contentWidth / 5));
+
+        addButton(Text.literal("SIZE  -"),
+                contentX + 9, sizeY, smallWidth, 23,
+                button -> appearance.changeScale(-0.05F));
+
+        addButton(Text.literal("SIZE  +"),
+                contentX + contentWidth - smallWidth - 9,
+                sizeY, smallWidth, 23,
+                button -> appearance.changeScale(0.05F));
     }
 
     private void addButton(
@@ -354,39 +373,50 @@ public final class AsyncScreen extends Screen {
             int mouseY,
             float delta
     ) {
-        currentMouseX = mouseX;
-        currentMouseY = mouseY;
-
         int x = panelX;
         int y = panelY;
         int right = x + panelWidth;
         int bottom = y + panelHeight;
 
-        // Собственный фон без повторного Minecraft blur.
-        context.fill(0, 0, width, height, BACKGROUND);
+        double scale = appearance.getScale();
 
-        drawAmbientGlow(context);
-        drawPanelGlow(context, x, y);
+        double scaledMouseX = width / 2.0
+                + (mouseX - width / 2.0) / scale;
+
+        double scaledMouseY = height / 2.0
+                + (mouseY - height / 2.0) / scale;
+
+        currentMouseX = (int) scaledMouseX;
+        currentMouseY = (int) scaledMouseY;
+
+        context.getMatrices().pushMatrix();
+
+        context.getMatrices().translate(
+                width / 2.0f,
+                height / 2.0f
+        );
+
+        context.getMatrices().scale(
+                (float) scale,
+                (float) scale
+        );
+
+        context.getMatrices().translate(
+                -width / 2.0f,
+                -height / 2.0f
+        );
 
         drawRounded(context, x, y, panelWidth, panelHeight, 12, PANEL);
+        context.fill(x + 2, y + 2, x + panelWidth - 2, y + 50, HEADER);
 
-        drawGradient(context,
-                x + 2, y + 2, panelWidth - 4, 48,
-                0xFF251632, 0xFF130D1D);
-
-        drawRounded(context,
-                x + 1, y + 1, panelWidth - 2, panelHeight - 2,
-                11, 0x00101010);
-
-        drawNeonBorder(context, x, y, panelWidth, panelHeight);
-
+        drawSimpleBorder(context, x, y, panelWidth, panelHeight);
         drawHeader(context, x, y, right);
 
         drawRounded(context,
                 contentX - 7, y + 59,
                 contentWidth + 14, 39, 7, HEADER);
 
-        drawNeonBorder(context,
+        drawSimpleBorder(context,
                 contentX - 7, y + 59,
                 contentWidth + 14, 39);
 
@@ -405,7 +435,12 @@ public final class AsyncScreen extends Screen {
 
         drawFooter(context, x, y, right, bottom);
 
-        super.render(context, mouseX, mouseY, delta);
+        super.render(
+                context,
+                (int) scaledMouseX,
+                (int) scaledMouseY,
+                delta
+        );
 
         drawCustomButtons(context);
 
@@ -422,74 +457,21 @@ public final class AsyncScreen extends Screen {
         if (listeningForKey || listeningForMenuKey) {
             drawKeyListening(context);
         }
+
+        context.getMatrices().popMatrix();
     }
 
-    // Фоновое фиолетовое свечение.
-    private void drawAmbientGlow(DrawContext context) {
-        long time = System.currentTimeMillis();
-        float pulse = (float) (0.5 + 0.5
-                * Math.sin(time / 650.0));
-
-        int alpha = 12 + (int) (pulse * 13);
-
-        drawRounded(context,
-                panelX - 30, panelY - 20,
-                panelWidth + 60, panelHeight + 40,
-                25, (alpha << 24) | 0x7136A8);
-
-        drawRounded(context,
-                panelX - 17, panelY - 10,
-                panelWidth + 34, panelHeight + 20,
-                20, 0x185D29A0);
-    }
-
-    // Многослойное свечение вокруг панели.
-    private void drawPanelGlow(
-            DrawContext context,
-            int x,
-            int y
-    ) {
-        long time = System.currentTimeMillis();
-        float pulse = (float) (0.5 + 0.5
-                * Math.sin(time / 450.0));
-
-        int alpha = 25 + (int) (pulse * 18);
-
-        drawRounded(context,
-                x - 12, y - 12,
-                panelWidth + 24, panelHeight + 24,
-                18, (alpha << 24) | 0xA64CFF);
-
-        drawRounded(context,
-                x - 7, y - 7,
-                panelWidth + 14, panelHeight + 14,
-                15, 0x397D36B2);
-
-        drawRounded(context,
-                x - 3, y - 3,
-                panelWidth + 6, panelHeight + 6,
-                13, 0x88713CAA);
-    }
-
-    private void drawNeonBorder(
+    private void drawSimpleBorder(
             DrawContext context,
             int x,
             int y,
             int w,
             int h
     ) {
-        context.fill(x + 12, y, x + w - 12, y + 1, ACCENT);
-        context.fill(x + 12, y + h - 1,
-                x + w - 12, y + h, ACCENT_DARK);
-
-        context.fill(x, y + 12, x + 1, y + h - 12,
-                0xFF8045BA);
-
-        context.fill(x + w - 1, y + 12,
-                x + w, y + h - 12, 0xFF8045BA);
-
-        context.fill(x + 12, y + 1,
-                x + w - 12, y + 2, 0x667D36B2);
+        context.fill(x, y, x + w, y + 1, BORDER);
+        context.fill(x, y + h - 1, x + w, y + h, BORDER);
+        context.fill(x, y, x + 1, y + h, BORDER);
+        context.fill(x + w - 1, y, x + w, y + h, BORDER);
     }
 
     private void drawHeader(
@@ -501,10 +483,6 @@ public final class AsyncScreen extends Screen {
         drawRounded(context,
                 x + 17, y + 10, 20, 20, 6,
                 0xFF39214D);
-
-        drawRounded(context,
-                x + 14, y + 7, 26, 26, 8,
-                0x387D36B2);
 
         context.drawCenteredTextWithShadow(
                 textRenderer,
@@ -524,7 +502,7 @@ public final class AsyncScreen extends Screen {
 
         context.drawText(
                 textRenderer,
-                Text.literal("ULTRA DARK"),
+                Text.literal("CLICKGUI"),
                 x + 45,
                 y + 24,
                 ACCENT_LIGHT,
@@ -551,11 +529,8 @@ public final class AsyncScreen extends Screen {
                 false
         );
 
-        // Неоновая полоска в заголовке.
-        drawGradient(context,
-                x + 2, y + 49,
-                panelWidth - 4, 2,
-                0xFFB45CFF, 0xFF54257D);
+        context.fill(x + 2, y + 49,
+                x + panelWidth - 2, y + 51, ACCENT_DARK);
     }
 
     private void drawPageHeading(DrawContext context, int y) {
@@ -701,25 +676,20 @@ public final class AsyncScreen extends Screen {
     }
 
     private void drawSettings(DrawContext context) {
-        drawStaticCard(context,
-                contentX, firstCardY, cardWidth, cardHeight,
-                "CLIENT VERSION", "Async optimization client",
-                "v1.0.0");
+        String color = String.format(Locale.ROOT, "#%06X",
+                appearance.getAccentColor() & 0xFFFFFF);
 
-        drawStaticCard(context,
-                rightCardX, firstCardY, cardWidth, cardHeight,
-                "GAME VERSION", "Supported Minecraft version",
-                "1.21.11");
+        String size = Math.round(appearance.getScale() * 100.0F) + "%";
 
-        drawStaticCard(context,
-                contentX, secondCardY, cardWidth, cardHeight,
-                "CONFIGURATION", "Settings saved automatically",
-                "async.json");
+        drawControlCard(context,
+                contentX, firstCardY, contentWidth, cardHeight,
+                "CLICKGUI COLOR", "Selected purple shade: " + color,
+                ACCENT);
 
-        drawStaticCard(context,
-                rightCardX, secondCardY, cardWidth, cardHeight,
-                "RENDERER", "Interface rendering",
-                "DRAW CONTEXT + FABRIC");
+        drawControlCard(context,
+                contentX, secondCardY, contentWidth, cardHeight,
+                "CLICKGUI SIZE", "Current interface size: " + size,
+                ACCENT);
     }
 
     private void drawControlCard(
@@ -734,23 +704,12 @@ public final class AsyncScreen extends Screen {
     ) {
         boolean hovered = mouseInside(x, y, w, h);
 
-        if (hovered) {
-            drawRounded(context,
-                    x - 3, y - 3, w + 6, h + 6,
-                    10, 0x357D36B2);
-        }
-
         drawRounded(context, x, y, w, h, 8,
                 hovered ? CARD_HOVER : CARD);
 
         drawRounded(context,
                 x + 9, y + 9, 3, h - 18, 2,
                 accent);
-
-        // Светящаяся вертикальная полоса.
-        drawRounded(context,
-                x + 7, y + 7, 7, h - 14, 3,
-                hovered ? 0x447D36B2 : 0x227D36B2);
 
         context.drawTextWithShadow(
                 textRenderer,
@@ -774,71 +733,7 @@ public final class AsyncScreen extends Screen {
                 y + h - 31,
                 x + w - 10,
                 y + h - 30,
-                0xFF30263D
-        );
-
-        // Неоновый индикатор карточки.
-        context.fill(
-                x + 19,
-                y + h - 31,
-                x + 19 + Math.max(12, (w - 29) / 4),
-                y + h - 30,
                 accent
-        );
-
-        if (hovered) {
-            context.fill(
-                    x + 19,
-                    y + 1,
-                    x + w - 19,
-                    y + 2,
-                    0xFFB45CFF
-            );
-        }
-    }
-
-    private void drawStaticCard(
-            DrawContext context,
-            int x,
-            int y,
-            int w,
-            int h,
-            String title,
-            String subtitle,
-            String value
-    ) {
-        drawRounded(context, x - 2, y - 2,
-                w + 4, h + 4, 9, 0x267D36B2);
-
-        drawRounded(context, x, y, w, h, 8, CARD);
-
-        drawRounded(context,
-                x + 9, y + 9, 3, h - 18, 2,
-                ACCENT);
-
-        context.drawTextWithShadow(
-                textRenderer,
-                Text.literal(title),
-                x + 19,
-                y + 9,
-                WHITE
-        );
-
-        context.drawText(
-                textRenderer,
-                Text.literal(subtitle),
-                x + 19,
-                y + 23,
-                MUTED,
-                false
-        );
-
-        context.drawTextWithShadow(
-                textRenderer,
-                Text.literal(value),
-                x + 19,
-                y + h - 20,
-                ACCENT_LIGHT
         );
     }
 
@@ -915,13 +810,6 @@ public final class AsyncScreen extends Screen {
             int fill = hovered ? BUTTON_HOVER : BUTTON;
             int edge = hovered || selected ? ACCENT : BORDER;
 
-            if (hovered || selected) {
-                drawRounded(context,
-                        bx - 4, by - 4,
-                        bw + 8, bh + 8,
-                        9, 0x357D36B2);
-            }
-
             drawRounded(context,
                     bx - 1, by - 1,
                     bw + 2, bh + 2,
@@ -935,14 +823,6 @@ public final class AsyncScreen extends Screen {
                         bx + 5, by + 5,
                         3, bh - 10, 2,
                         ACCENT_LIGHT);
-            }
-
-            if (hovered) {
-                context.fill(
-                        bx + 8, by + 1,
-                        bx + bw - 8, by + 2,
-                        ACCENT_LIGHT
-                );
             }
 
             context.drawCenteredTextWithShadow(
@@ -963,19 +843,12 @@ public final class AsyncScreen extends Screen {
         int messageY = height - 37;
 
         drawRounded(context,
-                messageX - 5, messageY - 5,
-                messageWidth + 10, 31,
-                9, 0x557D36B2);
-
-        drawRounded(context,
-                messageX - 2, messageY - 2,
-                messageWidth + 4, 25,
-                7, ACCENT_DARK);
-
-        drawRounded(context,
                 messageX, messageY,
                 messageWidth, 21,
                 6, PANEL);
+
+        drawSimpleBorder(context, messageX, messageY,
+                messageWidth, 21);
 
         context.drawCenteredTextWithShadow(
                 textRenderer,
@@ -984,45 +857,6 @@ public final class AsyncScreen extends Screen {
                 messageY + 7,
                 ACCENT_LIGHT
         );
-    }
-
-    private void drawGradient(
-            DrawContext context,
-            int x,
-            int y,
-            int w,
-            int h,
-            int startColor,
-            int endColor
-    ) {
-        if (w <= 0 || h <= 0) return;
-
-        for (int i = 0; i < w; i++) {
-            float progress = (float) i / Math.max(1, w - 1);
-
-            int a = (startColor >>> 24) & 255;
-            int r = (startColor >>> 16) & 255;
-            int g = (startColor >>> 8) & 255;
-            int b = startColor & 255;
-
-            int a2 = (endColor >>> 24) & 255;
-            int r2 = (endColor >>> 16) & 255;
-            int g2 = (endColor >>> 8) & 255;
-            int b2 = endColor & 255;
-
-            int color =
-                    (lerp(a, a2, progress) << 24)
-                            | (lerp(r, r2, progress) << 16)
-                            | (lerp(g, g2, progress) << 8)
-                            | lerp(b, b2, progress);
-
-            context.fill(x + i, y, x + i + 1, y + h, color);
-        }
-    }
-
-    private int lerp(int a, int b, float t) {
-        return Math.max(0, Math.min(255,
-                Math.round(a + (b - a) * t)));
     }
 
     private void drawRounded(
@@ -1163,6 +997,37 @@ public final class AsyncScreen extends Screen {
             case GLFW.GLFW_KEY_TAB -> "TAB";
             default -> "KEY " + key;
         };
+    }
+
+    @Override
+    public boolean mouseClicked(Click click, boolean doubled) {
+        double scale = appearance.getScale();
+
+        double x = width / 2.0
+                + (click.x() - width / 2.0) / scale;
+
+        double y = height / 2.0
+                + (click.y() - height / 2.0) / scale;
+
+        return super.mouseClicked(
+                new Click(x, y, new MouseInput(click.button(), 0)),
+                doubled
+        );
+    }
+
+    @Override
+    public boolean mouseReleased(Click click) {
+        double scale = appearance.getScale();
+
+        double x = width / 2.0
+                + (click.x() - width / 2.0) / scale;
+
+        double y = height / 2.0
+                + (click.y() - height / 2.0) / scale;
+
+        return super.mouseReleased(
+                new Click(x, y, new MouseInput(click.button(), 0))
+        );
     }
 
     @Override

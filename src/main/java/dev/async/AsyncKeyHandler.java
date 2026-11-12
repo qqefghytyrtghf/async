@@ -1,4 +1,3 @@
-
 package dev.async;
 
 import net.minecraft.client.MinecraftClient;
@@ -34,7 +33,7 @@ public final class AsyncKeyHandler {
 
         if (openMenu && client.currentScreen == null) {
             tickRate.suppressNextAttack();
-            client.setScreen(new AsyncAppearanceScreen(config));
+            client.setScreen(new AsyncScreen(tickRate, config));
         }
 
         int key = config.getToggleKey();

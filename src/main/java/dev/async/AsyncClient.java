@@ -23,10 +23,19 @@ public final class AsyncClient implements ClientModInitializer {
 
         tickRate = new TickRate(config);
 
-        AsyncKeyHandler keyHandler = new AsyncKeyHandler(tickRate, config);
+        // Регистрация HUD со статусом TriggerBot.
+        AsyncHud.register();
 
-        ClientTickEvents.END_CLIENT_TICK.register(tickRate::onEndTick);
-        ClientTickEvents.END_CLIENT_TICK.register(keyHandler::onEndTick);
+        AsyncKeyHandler keyHandler =
+                new AsyncKeyHandler(tickRate, config);
+
+        ClientTickEvents.END_CLIENT_TICK.register(
+                tickRate::onEndTick
+        );
+
+        ClientTickEvents.END_CLIENT_TICK.register(
+                keyHandler::onEndTick
+        );
     }
 
     public static AsyncConfig getConfig() {
