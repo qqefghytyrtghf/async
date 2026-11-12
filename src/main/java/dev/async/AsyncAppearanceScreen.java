@@ -46,11 +46,12 @@ public final class AsyncAppearanceScreen extends Screen {
         int buttonWidth = Math.min(190, panelWidth - 48);
 
         addDrawableChild(ButtonWidget.builder(
-                colorButtonText(),
-                button -> {
-                    appearance.nextAccentColor();
-                    button.setMessage(colorButtonText());
-                })
+                        colorButtonText(),
+                        button -> {
+                            if (client != null) {
+                                client.setScreen(new AsyncColorPickerScreen(this, appearance));
+                            }
+                        })
                 .dimensions(centerX - buttonWidth / 2, buttonY,
                         buttonWidth, 22)
                 .build());
@@ -58,32 +59,32 @@ public final class AsyncAppearanceScreen extends Screen {
         int sizeY = buttonY + 34;
         int sizeButtonWidth = 62;
         addDrawableChild(ButtonWidget.builder(Text.literal("−"),
-                button -> {
-                    appearance.changeScale(-0.05F);
-                    init();
-                })
+                        button -> {
+                            appearance.changeScale(-0.05F);
+                            init();
+                        })
                 .dimensions(centerX - 80, sizeY, sizeButtonWidth, 22)
                 .build());
 
         addDrawableChild(ButtonWidget.builder(sizeButtonText(),
-                button -> { })
+                        button -> { })
                 .dimensions(centerX - 12, sizeY, 72, 22)
                 .build());
 
         addDrawableChild(ButtonWidget.builder(Text.literal("+"),
-                button -> {
-                    appearance.changeScale(0.05F);
-                    init();
-                })
+                        button -> {
+                            appearance.changeScale(0.05F);
+                            init();
+                        })
                 .dimensions(centerX + 66, sizeY, sizeButtonWidth, 22)
                 .build());
 
         int keyY = sizeY + 34;
         addDrawableChild(ButtonWidget.builder(menuKeyButtonText(),
-                button -> {
-                    listeningForMenuKey = true;
-                    button.setMessage(Text.literal("PRESS A KEY..."));
-                })
+                        button -> {
+                            listeningForMenuKey = true;
+                            button.setMessage(Text.literal("PRESS A KEY..."));
+                        })
                 .dimensions(centerX - buttonWidth / 2, keyY,
                         buttonWidth, 22)
                 .build());
@@ -127,7 +128,7 @@ public final class AsyncAppearanceScreen extends Screen {
                 panelX + 28, panelY + 78, WHITE);
 
         context.drawText(textRenderer,
-                Text.literal("Choose one accent color for the whole interface"),
+                Text.literal("Choose any RGB color"),
                 panelX + 28, panelY + 91, MUTED, false);
 
         context.drawTextWithShadow(textRenderer,
@@ -135,7 +136,7 @@ public final class AsyncAppearanceScreen extends Screen {
                 panelX + 28, panelY + 132, WHITE);
 
         context.drawText(textRenderer,
-                Text.literal("Adjust the panel size"),
+                Text.literal("Adjust from 50% to 125%"),
                 panelX + 28, panelY + 145, MUTED, false);
 
         context.drawTextWithShadow(textRenderer,
@@ -168,7 +169,8 @@ public final class AsyncAppearanceScreen extends Screen {
     }
 
     private Text colorButtonText() {
-        return Text.literal("COLOR: " + colorName());
+        return Text.literal(String.format(Locale.ROOT,
+                "COLOR: #%06X", appearance.getAccentColor() & 0xFFFFFF));
     }
 
     private Text sizeButtonText() {
@@ -178,16 +180,6 @@ public final class AsyncAppearanceScreen extends Screen {
 
     private Text menuKeyButtonText() {
         return Text.literal("MENU KEY: " + keyName(config.getMenuKey()));
-    }
-
-    private String colorName() {
-        return switch (appearance.getAccentColor()) {
-            case 0xFF55DDF5 -> "CYAN";
-            case 0xFFFF5CAB -> "PINK";
-            case 0xFF55F5B0 -> "MINT";
-            case 0xFFFFC857 -> "GOLD";
-            default -> "PURPLE";
-        };
     }
 
     private String keyName(int key) {

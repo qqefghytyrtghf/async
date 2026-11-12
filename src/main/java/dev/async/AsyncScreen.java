@@ -19,18 +19,18 @@ public final class AsyncScreen extends Screen {
     private int ACCENT_LIGHT;
     private int ACCENT_DARK;
 
-    private static final int PANEL = 0xFF100C19;
-    private static final int HEADER = 0xFF171020;
-    private static final int CARD = 0xFF171220;
-    private static final int CARD_HOVER = 0xFF281936;
-    private static final int BUTTON = 0xFF21172D;
-    private static final int BUTTON_HOVER = 0xFF39234C;
+    private int PANEL;
+    private int HEADER;
+    private int CARD;
+    private int CARD_HOVER;
+    private int BUTTON;
+    private int BUTTON_HOVER;
+    private int BORDER;
 
     private static final int WHITE = 0xFFF8F0FF;
     private static final int MUTED = 0xFFA69AB5;
     private static final int GREEN = 0xFFBCA9D8;
     private static final int RED = 0xFF8F7BAA;
-    private static final int BORDER = 0xFF493D58;
 
     private enum Page {
         HOME, COMBAT, HUD, SETTINGS
@@ -80,6 +80,16 @@ public final class AsyncScreen extends Screen {
         ACCENT = appearance.getAccentColor();
         ACCENT_LIGHT = blend(ACCENT, 0xFFFFFFFF, 0.48F);
         ACCENT_DARK = blend(ACCENT, 0xFF090610, 0.58F);
+
+        // All major interface surfaces are derived from the selected accent.
+        // The result stays dark and restrained while visibly changing with the accent.
+        PANEL = blend(0xFF100C19, ACCENT, 0.12F);
+        HEADER = blend(0xFF171020, ACCENT, 0.20F);
+        CARD = blend(0xFF171220, ACCENT, 0.16F);
+        CARD_HOVER = blend(0xFF281936, ACCENT, 0.34F);
+        BUTTON = blend(0xFF21172D, ACCENT, 0.24F);
+        BUTTON_HOVER = blend(0xFF39234C, ACCENT, 0.48F);
+        BORDER = blend(0xFF493D58, ACCENT, 0.62F);
     }
 
     private int blend(int first, int second, float amount) {
@@ -285,17 +295,13 @@ public final class AsyncScreen extends Screen {
     }
 
     private void buildSettings() {
-        String color = String.format(Locale.ROOT, "#%06X",
-                appearance.getAccentColor() & 0xFFFFFF);
-
-        addButton(Text.literal("CLICKGUI COLOR: " + color),
+        addButton(Text.literal("CLICKGUI COLOR: " + appearance.getAccentColorName()),
                 contentX + 9, controlY(firstCardY), contentWidth - 18, 23,
                 button -> {
                     appearance.nextAccentColor();
                     updatePalette();
                     button.setMessage(Text.literal("CLICKGUI COLOR: "
-                            + String.format(Locale.ROOT, "#%06X",
-                            appearance.getAccentColor() & 0xFFFFFF)));
+                            + appearance.getAccentColorName()));
                 });
 
         int sizeY = controlY(secondCardY);
@@ -501,7 +507,7 @@ public final class AsyncScreen extends Screen {
     ) {
         drawRounded(context,
                 x + 17, y + 10, 20, 20, 6,
-                0xFF39214D);
+                ACCENT_DARK);
 
         context.drawCenteredTextWithShadow(
                 textRenderer,

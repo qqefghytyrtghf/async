@@ -14,7 +14,28 @@ public final class AsyncAppearanceConfig {
             .getConfigDir()
             .resolve("async-appearance.properties");
 
-    private int accentColor = 0xFF8E6BB8;
+    private static final String[] ACCENT_NAMES = {
+            "PURPLE", "BLUE", "CYAN", "TEAL",
+            "GREEN", "LIME", "YELLOW", "ORANGE",
+            "RED", "PINK", "MAGENTA", "GRAY"
+    };
+
+    private static final int[] ACCENT_COLORS = {
+            0xFF8E6BB8, // Purple
+            0xFF5685D8, // Blue
+            0xFF42B6C8, // Cyan
+            0xFF3DAE9A, // Teal
+            0xFF65A86B, // Green
+            0xFFA2B957, // Lime
+            0xFFC6A64B, // Yellow
+            0xFFCC8045, // Orange
+            0xFFC45B65, // Red
+            0xFFD16F9F, // Pink
+            0xFFA65BC4, // Magenta
+            0xFF8993A5  // Gray
+    };
+
+    private int accentColor = ACCENT_COLORS[0];
     private float scale = 1.0F;
 
     public AsyncAppearanceConfig() {
@@ -25,33 +46,42 @@ public final class AsyncAppearanceConfig {
         return accentColor;
     }
 
+    public String getAccentColorName() {
+        int index = findAccentIndex(accentColor);
+        return index >= 0 ? ACCENT_NAMES[index] : ACCENT_NAMES[0];
+    }
+
     public float getScale() {
         return scale;
     }
 
-    public void nextAccentColor() {
-        int[] colors = {
-                0xFF8E6BB8,
-                0xFF7957A6,
-                0xFFA18AC5,
-                0xFF6D5A91,
-                0xFF9B78B5
-        };
-
-        int current = 0;
-        for (int i = 0; i < colors.length; i++) {
-            if (colors[i] == accentColor) {
-                current = i;
-                break;
-            }
-        }
-
-        accentColor = colors[(current + 1) % colors.length];
+    public void setAccentColor(int color) {
+        accentColor = 0xFF000000 | (color & 0x00FFFFFF);
         save();
     }
 
+    public void nextAccentColor() {
+        int currentIndex = findAccentIndex(accentColor);
+        if (currentIndex < 0) {
+            currentIndex = 0;
+        }
+
+        accentColor = ACCENT_COLORS[(currentIndex + 1) % ACCENT_COLORS.length];
+        save();
+    }
+
+    private int findAccentIndex(int color) {
+        int rgb = color & 0x00FFFFFF;
+        for (int i = 0; i < ACCENT_COLORS.length; i++) {
+            if ((ACCENT_COLORS[i] & 0x00FFFFFF) == rgb) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
     public void changeScale(float amount) {
-        scale = Math.max(0.80F, Math.min(1.20F, scale + amount));
+        scale = Math.max(0.50F, Math.min(1.25F, scale + amount));
         scale = Math.round(scale * 100.0F) / 100.0F;
         save();
     }
@@ -68,25 +98,27 @@ public final class AsyncAppearanceConfig {
 
             String color = properties.getProperty("accentColor");
             if (color != null) {
-                accentColor = (int) Long.parseLong(color, 16);
+                accentColor = 0xFF000000
+                        | ((int) Long.parseLong(color, 16) & 0x00FFFFFF);
             }
 
             String savedScale = properties.getProperty("scale");
             if (savedScale != null) {
                 float parsed = Float.parseFloat(savedScale);
                 if (Float.isFinite(parsed)) {
-                    scale = Math.max(0.80F, Math.min(1.20F, parsed));
+                    scale = Math.max(0.50F, Math.min(1.25F, parsed));
                 }
             }
         } catch (Exception ignored) {
-            accentColor = 0xFF8E6BB8;
+            accentColor = ACCENT_COLORS[0];
             scale = 1.0F;
         }
     }
 
     private void save() {
         Properties properties = new Properties();
-        properties.setProperty("accentColor", Integer.toHexString(accentColor));
+        properties.setProperty("accentColor",
+                String.format(java.util.Locale.ROOT, "%06X", accentColor & 0x00FFFFFF));
         properties.setProperty("scale", Float.toString(scale));
 
         try {
