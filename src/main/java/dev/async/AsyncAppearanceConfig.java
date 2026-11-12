@@ -15,24 +15,24 @@ public final class AsyncAppearanceConfig {
             .resolve("async-appearance.properties");
 
     private static final String[] ACCENT_NAMES = {
-            "PURPLE", "BLUE", "CYAN", "TEAL",
-            "GREEN", "LIME", "YELLOW", "ORANGE",
-            "RED", "PINK", "MAGENTA", "GRAY"
+            "Фиолетовый", "Синий", "Бирюзовый", "Морская Волна",
+            "Зелёный", "Лаймовый", "Жёлтый", "Оранжевый",
+            "Красный", "Розовый", "Пурпурный", "Серый"
     };
 
     private static final int[] ACCENT_COLORS = {
-            0xFF8E6BB8, // Purple
-            0xFF5685D8, // Blue
-            0xFF42B6C8, // Cyan
-            0xFF3DAE9A, // Teal
-            0xFF65A86B, // Green
-            0xFFA2B957, // Lime
-            0xFFC6A64B, // Yellow
-            0xFFCC8045, // Orange
-            0xFFC45B65, // Red
-            0xFFD16F9F, // Pink
-            0xFFA65BC4, // Magenta
-            0xFF8993A5  // Gray
+            0xFF8E6BB8, // Фиолетовый
+            0xFF5685D8, // Синий
+            0xFF42B6C8, // Бирюзовый
+            0xFF3DAE9A, // Морская Волна
+            0xFF65A86B, // Зелёный
+            0xFFA2B957, // Лаймовый
+            0xFFC6A64B, // Жёлтый
+            0xFFCC8045, // Оранжевый
+            0xFFC45B65, // Красный
+            0xFFD16F9F, // Розовый
+            0xFFA65BC4, // Пурпурный
+            0xFF8993A5  // Серый
     };
 
     private int accentColor = ACCENT_COLORS[0];

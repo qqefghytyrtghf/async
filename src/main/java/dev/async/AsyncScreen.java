@@ -1,3 +1,4 @@
+
 package dev.async;
 
 import net.minecraft.client.input.MouseInput;
@@ -81,8 +82,6 @@ public final class AsyncScreen extends Screen {
         ACCENT_LIGHT = blend(ACCENT, 0xFFFFFFFF, 0.48F);
         ACCENT_DARK = blend(ACCENT, 0xFF090610, 0.58F);
 
-        // All major interface surfaces are derived from the selected accent.
-        // The result stays dark and restrained while visibly changing with the accent.
         PANEL = blend(0xFF100C19, ACCENT, 0.12F);
         HEADER = blend(0xFF171020, ACCENT, 0.20F);
         CARD = blend(0xFF171220, ACCENT, 0.16F);
@@ -130,12 +129,12 @@ public final class AsyncScreen extends Screen {
         int tabWidth = (contentWidth - tabGap * 3) / 4;
         int tabY = panelY + 65;
 
-        addNavigationButton("HOME", Page.HOME, contentX, tabY, tabWidth);
-        addNavigationButton("COMBAT", Page.COMBAT,
+        addNavigationButton("Главная", Page.HOME, contentX, tabY, tabWidth);
+        addNavigationButton("Бой", Page.COMBAT,
                 contentX + tabWidth + tabGap, tabY, tabWidth);
-        addNavigationButton("HUD", Page.HUD,
+        addNavigationButton("Интерфейс", Page.HUD,
                 contentX + (tabWidth + tabGap) * 2, tabY, tabWidth);
-        addNavigationButton("SETTINGS", Page.SETTINGS,
+        addNavigationButton("Настройки", Page.SETTINGS,
                 contentX + (tabWidth + tabGap) * 3, tabY, tabWidth);
 
         switch (page) {
@@ -160,6 +159,7 @@ public final class AsyncScreen extends Screen {
     private void changePage(Page newPage) {
         page = newPage;
         distanceField = null;
+        distanceSlider = null;
         distanceError = false;
         listeningForKey = false;
         listeningForMenuKey = false;
@@ -171,12 +171,10 @@ public final class AsyncScreen extends Screen {
     }
 
     private void buildHome() {
-        int mainY = firstCardY;
-
         addButton(
                 enabledText(),
                 contentX + 12,
-                mainY + cardHeight - 34,
+                firstCardY + cardHeight - 34,
                 contentWidth - 24,
                 25,
                 button -> {
@@ -187,11 +185,11 @@ public final class AsyncScreen extends Screen {
 
         int buttonY = secondCardY + cardHeight - 29;
 
-        addButton(Text.literal("COMBAT  →"),
+        addButton(Text.literal("Бой  →"),
                 contentX + 9, buttonY, cardWidth - 18, 22,
                 button -> changePage(Page.COMBAT));
 
-        addButton(Text.literal("HUD  →"),
+        addButton(Text.literal("Интерфейс  →"),
                 rightCardX + 9, buttonY, cardWidth - 18, 22,
                 button -> changePage(Page.HUD));
     }
@@ -220,20 +218,26 @@ public final class AsyncScreen extends Screen {
                     button.setMessage(weaponText());
                 });
 
-        int distanceY = controlY(secondCardY);
-
+        int distanceY = secondCardY + cardHeight - 24;
         int distanceX = rightCardX + 9;
+
+        int fieldWidth = 112;
+        int applyWidth = 66;
+        int applyX = rightCardX + cardWidth - applyWidth - 9;
 
         distanceField = new TextFieldWidget(
                 textRenderer,
                 distanceX,
-                distanceY,
-                55,
-                buttonHeight,
-                Text.literal("Distance")
+                distanceY - 1,
+                fieldWidth,
+                25,
+                Text.literal("Дистанция атаки")
         );
 
         distanceField.setMaxLength(5);
+        distanceField.setDrawsBackground(false);
+        distanceField.setEditableColor(WHITE);
+
         distanceField.setText(String.format(
                 Locale.ROOT,
                 "%.1f",
@@ -243,18 +247,22 @@ public final class AsyncScreen extends Screen {
         addDrawableChild(distanceField);
 
         addButton(
-                Text.literal("OK"),
-                rightCardX + cardWidth - 51,
+                Text.literal("Применить"),
+                applyX,
                 distanceY,
-                42,
+                applyWidth,
                 buttonHeight,
                 button -> applyDistance()
         );
 
+        int sliderX = distanceX + fieldWidth + 9;
+        int sliderRight = applyX - 7;
+        int sliderWidth = Math.max(1, sliderRight - sliderX);
+
         distanceSlider = new DistanceSlider(
-                distanceX + 103,
+                sliderX,
                 distanceY,
-                Math.max(70, cardWidth - 121),
+                sliderWidth,
                 buttonHeight,
                 config.getAttackDistance()
         );
@@ -273,7 +281,7 @@ public final class AsyncScreen extends Screen {
                 button -> {
                     listeningForKey = true;
                     listeningForMenuKey = false;
-                    button.setMessage(Text.literal("PRESS A KEY..."));
+                    button.setMessage(Text.literal("Нажмите клавишу..."));
                 });
     }
 
@@ -290,28 +298,28 @@ public final class AsyncScreen extends Screen {
                 button -> {
                     listeningForMenuKey = true;
                     listeningForKey = false;
-                    button.setMessage(Text.literal("PRESS A KEY..."));
+                    button.setMessage(Text.literal("Нажмите клавишу..."));
                 });
     }
 
     private void buildSettings() {
-        addButton(Text.literal("CLICKGUI COLOR: " + appearance.getAccentColorName()),
+        addButton(Text.literal("Цвет интерфейса: " + appearance.getAccentColorName()),
                 contentX + 9, controlY(firstCardY), contentWidth - 18, 23,
                 button -> {
                     appearance.nextAccentColor();
                     updatePalette();
-                    button.setMessage(Text.literal("CLICKGUI COLOR: "
+                    button.setMessage(Text.literal("Цвет интерфейса: "
                             + appearance.getAccentColorName()));
                 });
 
         int sizeY = controlY(secondCardY);
-        int smallWidth = Math.min(70, Math.max(48, contentWidth / 5));
+        int smallWidth = Math.min(90, Math.max(65, contentWidth / 5));
 
-        addButton(Text.literal("SIZE  -"),
+        addButton(Text.literal("Размер  −"),
                 contentX + 9, sizeY, smallWidth, 23,
                 button -> appearance.changeScale(-0.05F));
 
-        addButton(Text.literal("SIZE  +"),
+        addButton(Text.literal("Размер  +"),
                 contentX + contentWidth - smallWidth - 9,
                 sizeY, smallWidth, 23,
                 button -> appearance.changeScale(0.05F));
@@ -346,11 +354,17 @@ public final class AsyncScreen extends Screen {
                     && distance >= 0.5
                     && distance <= 4.0) {
 
+                distance = Math.round(distance * 10.0) / 10.0;
+
                 config.setAttackDistance(distance);
                 distanceError = false;
 
                 distanceField.setText(String.format(
                         Locale.ROOT, "%.1f", distance));
+
+                if (distanceSlider != null) {
+                    distanceSlider.setDistance(distance);
+                }
             } else {
                 distanceError = true;
             }
@@ -434,7 +448,7 @@ public final class AsyncScreen extends Screen {
         drawRounded(context, x, y, panelWidth, panelHeight, 12, PANEL);
         context.fill(x + 2, y + 2, x + panelWidth - 2, y + 50, HEADER);
 
-        drawSimpleBorder(context, x, y, panelWidth, panelHeight);
+        drawSimpleBorder(context, x, y + 50, panelWidth, panelHeight - 50);
         drawHeader(context, x, y, right);
 
         drawRounded(context,
@@ -444,10 +458,6 @@ public final class AsyncScreen extends Screen {
         drawSimpleBorder(context,
                 contentX - 7, y + 59,
                 contentWidth + 14, 39);
-
-        context.fill(contentX - 2, y + 97,
-                contentX + contentWidth + 2, y + 98,
-                ACCENT_DARK);
 
         drawPageHeading(context, y);
 
@@ -460,6 +470,10 @@ public final class AsyncScreen extends Screen {
 
         drawFooter(context, x, y, right, bottom);
 
+        if (page == Page.COMBAT && distanceField != null) {
+            drawDistanceField(context);
+        }
+
         super.render(
                 context,
                 (int) scaledMouseX,
@@ -469,10 +483,24 @@ public final class AsyncScreen extends Screen {
 
         drawCustomButtons(context);
 
+        if (page == Page.COMBAT && distanceSlider != null) {
+            context.drawCenteredTextWithShadow(
+                    textRenderer,
+                    Text.literal(String.format(
+                            Locale.ROOT,
+                            "Дистанция: %.1f",
+                            distanceSlider.getDistance()
+                    )),
+                    distanceSlider.getX() + distanceSlider.getWidth() / 2,
+                    distanceSlider.getY() - 13,
+                    WHITE
+            );
+        }
+
         if (distanceError && page == Page.COMBAT) {
             context.drawTextWithShadow(
                     textRenderer,
-                    Text.literal("Allowed distance: 0.5 - 4.0"),
+                    Text.literal("Допустимое значение: 0.5–4.0"),
                     rightCardX + 10,
                     secondCardY + cardHeight + 2,
                     RED
@@ -484,6 +512,30 @@ public final class AsyncScreen extends Screen {
         }
 
         context.getMatrices().popMatrix();
+    }
+
+    private void drawDistanceField(DrawContext context) {
+        int x = distanceField.getX();
+        int y = distanceField.getY();
+        int w = distanceField.getWidth();
+        int h = distanceField.getHeight();
+
+        int background = distanceField.isFocused()
+                ? CARD_HOVER : BUTTON;
+
+        drawRounded(
+                context,
+                x - 1, y - 1,
+                w + 2, h + 2,
+                6, BORDER
+        );
+
+        drawRounded(
+                context,
+                x, y,
+                w, h,
+                5, background
+        );
     }
 
     private void drawSimpleBorder(
@@ -519,7 +571,7 @@ public final class AsyncScreen extends Screen {
 
         context.drawTextWithShadow(
                 textRenderer,
-                Text.literal("ASYNC"),
+                Text.literal("Async"),
                 x + 45,
                 y + 10,
                 WHITE
@@ -527,7 +579,7 @@ public final class AsyncScreen extends Screen {
 
         context.drawText(
                 textRenderer,
-                Text.literal("CLICKGUI"),
+                Text.literal("ClickGUI"),
                 x + 45,
                 y + 24,
                 ACCENT_LIGHT,
@@ -547,30 +599,27 @@ public final class AsyncScreen extends Screen {
 
         context.drawText(
                 textRenderer,
-                Text.literal("OPTIMIZATION CLIENT"),
+                Text.literal("Клиент оптимизации"),
                 x + 19,
                 y + 39,
                 MUTED,
                 false
         );
-
-        context.fill(x + 2, y + 49,
-                x + panelWidth - 2, y + 51, ACCENT_DARK);
     }
 
     private void drawPageHeading(DrawContext context, int y) {
         String title = switch (page) {
-            case HOME -> "CONTROL CENTER";
-            case COMBAT -> "COMBAT";
-            case HUD -> "HUD CONTROL";
-            case SETTINGS -> "SETTINGS";
+            case HOME -> "Главная";
+            case COMBAT -> "Бой";
+            case HUD -> "Интерфейс";
+            case SETTINGS -> "Настройки";
         };
 
         String subtitle = switch (page) {
-            case HOME -> "Your game. Your settings. Your control.";
-            case COMBAT -> "Configure your existing Async options.";
-            case HUD -> "Customize your interface.";
-            case SETTINGS -> "Manage your Async configuration.";
+            case HOME -> "Управление модом и его функциями.";
+            case COMBAT -> "Настройка параметров боя.";
+            case HUD -> "Настройка отображения интерфейса.";
+            case SETTINGS -> "Настройки внешнего вида Async.";
         };
 
         context.drawTextWithShadow(
@@ -594,22 +643,22 @@ public final class AsyncScreen extends Screen {
     private void drawHome(DrawContext context) {
         drawControlCard(context,
                 contentX, firstCardY, contentWidth, cardHeight,
-                "TRIGGERBOT", "Current module status",
+                "TriggerBot", "Текущее состояние модуля",
                 tickRate.isEnabled() ? GREEN : RED);
 
         drawControlCard(context,
                 contentX, secondCardY, cardWidth, cardHeight,
-                "COMBAT", "Existing combat settings", ACCENT);
+                "Бой", "Параметры атаки", ACCENT);
 
         drawControlCard(context,
                 rightCardX, secondCardY, cardWidth, cardHeight,
-                "HUD", "Interface and status settings", ACCENT);
+                "Интерфейс", "Отображение и статус", ACCENT);
 
         int overviewY = secondCardY + cardHeight + 15;
 
         context.drawText(
                 textRenderer,
-                Text.literal("SYSTEM OVERVIEW"),
+                Text.literal("Состояние системы"),
                 contentX,
                 overviewY,
                 ACCENT_LIGHT,
@@ -651,7 +700,7 @@ public final class AsyncScreen extends Screen {
 
         context.drawText(
                 textRenderer,
-                Text.literal("DISTANCE: " + distance),
+                Text.literal("Дистанция атаки: " + distance),
                 contentX,
                 overviewY + 29,
                 ACCENT_LIGHT,
@@ -662,59 +711,59 @@ public final class AsyncScreen extends Screen {
     private void drawCombat(DrawContext context) {
         drawControlCard(context,
                 contentX, firstCardY, cardWidth, cardHeight,
-                "ATTACK MODE", "Current attack setting", ACCENT);
+                "Режим", "Выбранный режим атаки", ACCENT);
 
         drawControlCard(context,
                 rightCardX, firstCardY, cardWidth, cardHeight,
-                "TARGET MODE", "Current target setting", ACCENT);
+                "Цель", "Выбранная цель", ACCENT);
 
         drawControlCard(context,
                 contentX, secondCardY, cardWidth, cardHeight,
-                "WEAPON MODE", "Current weapon setting", ACCENT);
+                "Режим оружия", "Выбранное оружие", ACCENT);
 
         drawControlCard(context,
                 rightCardX, secondCardY, cardWidth, cardHeight,
-                "ATTACK DISTANCE", "Allowed range: 0.5 - 4.0",
-                ACCENT);
+                "Дистанция атаки", "Допустимо: 0.5–4.0", ACCENT);
 
         drawControlCard(context,
                 contentX, thirdCardY, cardWidth, cardHeight,
-                "KEY TOGGLE", "Keyboard switching",
+                "Переключение клавишей", "Включение и выключение",
                 tickRate.isKeyToggleEnabled() ? GREEN : RED);
 
         drawControlCard(context,
                 rightCardX, thirdCardY, cardWidth, cardHeight,
-                "TRIGGER KEY", "Assigned activation key",
-                ACCENT);
+                "Клавиша активации", "Назначенная клавиша", ACCENT);
     }
 
     private void drawHud(DrawContext context) {
         drawControlCard(context,
                 contentX, firstCardY, cardWidth, cardHeight,
-                "STATUS DISPLAY", "Отображение Надписи вкл/выкл",
+                "Отображение статуса", "Показывать надпись вкл./выкл.",
                 config.isShowStatus() ? GREEN : RED);
 
         drawControlCard(context,
                 rightCardX, firstCardY, cardWidth, cardHeight,
-                "MENU KEY", "Assigned menu opening key",
-                ACCENT);
+                "Клавиша меню", "Клавиша открытия меню", ACCENT);
     }
 
     private void drawSettings(DrawContext context) {
-        String color = String.format(Locale.ROOT, "#%06X",
-                appearance.getAccentColor() & 0xFFFFFF);
+        String color = String.format(
+                Locale.ROOT,
+                "#%06X",
+                appearance.getAccentColor() & 0xFFFFFF
+        );
 
-        String size = Math.round(appearance.getScale() * 100.0F) + "%";
+        String size = Math.round(
+                appearance.getScale() * 100.0F
+        ) + "%";
 
         drawControlCard(context,
                 contentX, firstCardY, contentWidth, cardHeight,
-                "CLICKGUI COLOR", "Selected purple shade: " + color,
-                ACCENT);
+                "Цвет ClickGUI", "Выбранный цвет: " + color, ACCENT);
 
         drawControlCard(context,
                 contentX, secondCardY, contentWidth, cardHeight,
-                "CLICKGUI SIZE", "Current interface size: " + size,
-                ACCENT);
+                "Размер ClickGUI", "Текущий размер: " + size, ACCENT);
     }
 
     private void drawControlCard(
@@ -752,14 +801,6 @@ public final class AsyncScreen extends Screen {
                 MUTED,
                 false
         );
-
-        context.fill(
-                x + 19,
-                y + h - 31,
-                x + w - 10,
-                y + h - 30,
-                accent
-        );
     }
 
     private void drawFooter(
@@ -769,21 +810,13 @@ public final class AsyncScreen extends Screen {
             int right,
             int bottom
     ) {
-        context.fill(
-                x + 16,
-                bottom - 39,
-                right - 16,
-                bottom - 38,
-                BORDER
-        );
-
         drawRounded(context,
                 x + 19, bottom - 24, 8, 8, 3,
                 tickRate.isEnabled() ? GREEN : RED);
 
         String status = tickRate.isEnabled()
-                ? "MOD ENABLED"
-                : "MOD DISABLED";
+                ? "Мод включён"
+                : "Мод выключен";
 
         context.drawText(
                 textRenderer,
@@ -806,7 +839,7 @@ public final class AsyncScreen extends Screen {
                 false
         );
 
-        String footer = "ASYNC v1.0.0";
+        String footer = "Async v1.0.0";
 
         context.drawText(
                 textRenderer,
@@ -861,7 +894,7 @@ public final class AsyncScreen extends Screen {
     }
 
     private void drawKeyListening(DrawContext context) {
-        String message = "PRESS A KEY  |  ESC TO CANCEL";
+        String message = "Нажмите клавишу  |  ESC — отмена";
 
         int messageWidth = textRenderer.getWidth(message) + 30;
         int messageX = (width - messageWidth) / 2;
@@ -872,7 +905,8 @@ public final class AsyncScreen extends Screen {
                 messageWidth, 21,
                 6, PANEL);
 
-        drawSimpleBorder(context, messageX, messageY,
+        drawSimpleBorder(context,
+                messageX, messageY,
                 messageWidth, 21);
 
         context.drawCenteredTextWithShadow(
@@ -931,80 +965,80 @@ public final class AsyncScreen extends Screen {
         String message = button.getMessage().getString();
 
         return switch (page) {
-            case HOME -> message.equals("HOME");
-            case COMBAT -> message.equals("COMBAT");
-            case HUD -> message.equals("HUD");
-            case SETTINGS -> message.equals("SETTINGS");
+            case HOME -> message.equals("Главная");
+            case COMBAT -> message.equals("Бой");
+            case HUD -> message.equals("Интерфейс");
+            case SETTINGS -> message.equals("Настройки");
         };
     }
 
     private Text enabledText() {
         return Text.literal(
                 tickRate.isEnabled()
-                        ? "TRIGGERBOT  ON"
-                        : "TRIGGERBOT  OFF"
+                        ? "TriggerBot: Вкл."
+                        : "TriggerBot: Выкл."
         );
     }
 
     private Text attackText() {
         String mode = switch (tickRate.getAttackMode()) {
-            case NORMAL -> "NORMAL";
-            case FAST -> "FAST";
+            case NORMAL -> "Комбо";
+            case FAST -> "Криты";
         };
 
-        return Text.literal("ATTACK: " + mode);
+        return Text.literal("Режим: " + mode);
     }
 
     private Text targetText() {
         return Text.literal(
-                "TARGET: " + (
+                "Цель: " + (
                         tickRate.getMode() == TargetMode.MOBS
-                                ? "MOBS"
-                                : "PLAYERS"
+                                ? "Мобы"
+                                : "Игроки"
                 )
         );
     }
 
     private Text weaponText() {
         return Text.literal(
-                "WEAPON: " + (
+                "Оружие: " + (
                         tickRate.getWeaponMode()
                                 == TickWeapon.WEAPONS_ONLY
-                                ? "WEAPONS"
-                                : "ANY ITEM"
+                                ? "Только оружие"
+                                : "Любой предмет"
                 )
         );
     }
 
     private Text keyToggleText() {
         return Text.literal(
-                "KEY TOGGLE: "
-                        + (tickRate.isKeyToggleEnabled() ? "ON" : "OFF")
+                "Переключение: "
+                        + (tickRate.isKeyToggleEnabled() ? "Вкл." : "Выкл.")
         );
     }
 
     private Text triggerKeyText() {
         return Text.literal(
-                "TRIGGER KEY: " + keyName(tickRate.getToggleKey())
+                "Клавиша: " + keyName(tickRate.getToggleKey())
         );
     }
 
     private Text menuKeyText() {
         return Text.literal(
-                "MENU KEY: " + keyName(config.getMenuKey())
+                "Клавиша меню: " + keyName(config.getMenuKey())
         );
     }
 
     private Text statusText() {
         return Text.literal(
-                "STATUS: "
-                        + (config.isShowStatus() ? "ON" : "OFF")
+                "Статус: "
+                        + (config.isShowStatus() ? "Вкл." : "Выкл.")
         );
     }
 
     private String keyName(int key) {
         if (key == GLFW.GLFW_KEY_UNKNOWN) {
-            return "NONE";
+            return "Не назначена";
         }
 
         String name = GLFW.glfwGetKeyName(key, 0);
@@ -1014,44 +1048,51 @@ public final class AsyncScreen extends Screen {
         }
 
         return switch (key) {
-            case GLFW.GLFW_KEY_RIGHT_SHIFT -> "R SHIFT";
-            case GLFW.GLFW_KEY_LEFT_SHIFT -> "L SHIFT";
-            case GLFW.GLFW_KEY_RIGHT_CONTROL -> "R CTRL";
-            case GLFW.GLFW_KEY_LEFT_CONTROL -> "L CTRL";
-            case GLFW.GLFW_KEY_SPACE -> "SPACE";
-            case GLFW.GLFW_KEY_TAB -> "TAB";
-            default -> "KEY " + key;
+            case GLFW.GLFW_KEY_RIGHT_SHIFT -> "Правый Shift";
+            case GLFW.GLFW_KEY_LEFT_SHIFT -> "Левый Shift";
+            case GLFW.GLFW_KEY_RIGHT_CONTROL -> "Правый Ctrl";
+            case GLFW.GLFW_KEY_LEFT_CONTROL -> "Левый Ctrl";
+            case GLFW.GLFW_KEY_SPACE -> "Пробел";
+            case GLFW.GLFW_KEY_TAB -> "Tab";
+            default -> "Клавиша " + key;
         };
+    }
+
+    private Click transformClick(Click click) {
+        double scale = appearance.getScale();
+
+        double x = width / 2.0
+                + (click.x() - width / 2.0) / scale;
+
+        double y = height / 2.0
+                + (click.y() - height / 2.0) / scale;
+
+        return new Click(x, y,
+                new MouseInput(click.button(), 0));
     }
 
     @Override
     public boolean mouseClicked(Click click, boolean doubled) {
-        double scale = appearance.getScale();
-
-        double x = width / 2.0
-                + (click.x() - width / 2.0) / scale;
-
-        double y = height / 2.0
-                + (click.y() - height / 2.0) / scale;
-
-        return super.mouseClicked(
-                new Click(x, y, new MouseInput(click.button(), 0)),
-                doubled
-        );
+        return super.mouseClicked(transformClick(click), doubled);
     }
 
     @Override
     public boolean mouseReleased(Click click) {
+        return super.mouseReleased(transformClick(click));
+    }
+
+    @Override
+    public boolean mouseDragged(
+            Click click,
+            double deltaX,
+            double deltaY
+    ) {
         double scale = appearance.getScale();
 
-        double x = width / 2.0
-                + (click.x() - width / 2.0) / scale;
-
-        double y = height / 2.0
-                + (click.y() - height / 2.0) / scale;
-
-        return super.mouseReleased(
-                new Click(x, y, new MouseInput(click.button(), 0))
+        return super.mouseDragged(
+                transformClick(click),
+                deltaX / scale,
+                deltaY / scale
         );
     }
 
@@ -1082,6 +1123,72 @@ public final class AsyncScreen extends Screen {
             updateMessage();
         }
 
+        @Override
+        public void renderWidget(
+                DrawContext context,
+                int mouseX,
+                int mouseY,
+                float delta
+        ) {
+            int x = getX();
+            int y = getY();
+            int width = getWidth();
+            int height = getHeight();
+
+            int background = isHovered()
+                    ? BUTTON_HOVER : BUTTON;
+
+            drawRounded(
+                    context,
+                    x, y, width, height,
+                    6, background
+            );
+
+            int trackLeft = x + 7;
+            int trackRight = x + width - 7;
+            int trackWidth = Math.max(1, trackRight - trackLeft);
+            int trackY = y + height - 5;
+
+            int filledWidth = (int) Math.round(trackWidth * value);
+
+            drawRounded(
+                    context,
+                    trackLeft, trackY,
+                    trackWidth, 3,
+                    2, BORDER
+            );
+
+            if (filledWidth > 0) {
+                drawRounded(
+                        context,
+                        trackLeft, trackY,
+                        filledWidth, 3,
+                        2, ACCENT
+                );
+            }
+
+            int thumbX = trackLeft + filledWidth - 4;
+
+            thumbX = Math.max(
+                    trackLeft - 1,
+                    Math.min(trackRight - 7, thumbX)
+            );
+
+            drawRounded(
+                    context,
+                    thumbX - 1, y + 3,
+                    10, height - 7,
+                    4, ACCENT_DARK
+            );
+
+            drawRounded(
+                    context,
+                    thumbX, y + 4,
+                    8, height - 9,
+                    3, ACCENT_LIGHT
+            );
+        }
+
         private double getDistance() {
             int step = (int) Math.round(value * 35.0);
             return 0.5 + step * 0.1;
@@ -1091,7 +1198,7 @@ public final class AsyncScreen extends Screen {
         protected void updateMessage() {
             setMessage(Text.literal(String.format(
                     Locale.ROOT,
-                    "DISTANCE: %.1f",
+                    "Дистанция: %.1f",
                     getDistance()
             )));
         }
