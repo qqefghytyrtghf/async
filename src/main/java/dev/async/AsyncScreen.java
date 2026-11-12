@@ -1,7 +1,6 @@
 package dev.async;
 
 import net.minecraft.client.input.MouseInput;
-import net.minecraft.client.input.MouseInput;
 import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
@@ -10,7 +9,7 @@ import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.input.KeyInput;
 import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
-import net.minecraft.client.input.MouseInput;
+import net.minecraft.client.gui.widget.SliderWidget;
 
 import java.util.Locale;
 
@@ -67,6 +66,7 @@ public final class AsyncScreen extends Screen {
     private boolean distanceError;
 
     private TextFieldWidget distanceField;
+    private DistanceSlider distanceSlider;
 
     public AsyncScreen(TickRate tickRate, AsyncConfig config) {
         super(Text.literal("Async"));
@@ -212,25 +212,44 @@ public final class AsyncScreen extends Screen {
 
         int distanceY = controlY(secondCardY);
 
+        int distanceX = rightCardX + 9;
+
         distanceField = new TextFieldWidget(
                 textRenderer,
-                rightCardX + 9,
+                distanceX,
                 distanceY,
-                Math.max(35, cardWidth - 66),
+                55,
                 buttonHeight,
                 Text.literal("Distance")
         );
 
         distanceField.setMaxLength(5);
         distanceField.setText(String.format(
-                Locale.ROOT, "%.1f", config.getAttackDistance()));
+                Locale.ROOT,
+                "%.1f",
+                config.getAttackDistance()
+        ));
 
         addDrawableChild(distanceField);
 
-        addButton(Text.literal("OK"),
+        addButton(
+                Text.literal("OK"),
                 rightCardX + cardWidth - 51,
-                distanceY, 42, buttonHeight,
-                button -> applyDistance());
+                distanceY,
+                42,
+                buttonHeight,
+                button -> applyDistance()
+        );
+
+        distanceSlider = new DistanceSlider(
+                distanceX + 103,
+                distanceY,
+                Math.max(70, cardWidth - 121),
+                buttonHeight,
+                config.getAttackDistance()
+        );
+
+        addDrawableChild(distanceSlider);
 
         addButton(keyToggleText(), contentX + 9,
                 controlY(thirdCardY), cardWidth - 18, buttonHeight,
@@ -1034,5 +1053,62 @@ public final class AsyncScreen extends Screen {
     public void close() {
         tickRate.suppressNextAttack();
         super.close();
+    }
+
+    private final class DistanceSlider extends SliderWidget {
+
+        private DistanceSlider(
+                int x,
+                int y,
+                int width,
+                int height,
+                double distance
+        ) {
+            super(
+                    x,
+                    y,
+                    width,
+                    height,
+                    Text.empty(),
+                    (distance - 0.5) / 3.5
+            );
+
+            updateMessage();
+        }
+
+        private double getDistance() {
+            int step = (int) Math.round(value * 35.0);
+            return 0.5 + step * 0.1;
+        }
+
+        @Override
+        protected void updateMessage() {
+            setMessage(Text.literal(String.format(
+                    Locale.ROOT,
+                    "DISTANCE: %.1f",
+                    getDistance()
+            )));
+        }
+
+        @Override
+        protected void applyValue() {
+            double distance = getDistance();
+
+            config.setAttackDistance(distance);
+
+            if (distanceField != null) {
+                distanceField.setText(String.format(
+                        Locale.ROOT,
+                        "%.1f",
+                        distance
+                ));
+            }
+        }
+
+        private void setDistance(double distance) {
+            double normalized = (distance - 0.5) / 3.5;
+            setValue(normalized);
+            updateMessage();
+        }
     }
 }
